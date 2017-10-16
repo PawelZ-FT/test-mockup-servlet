@@ -1,0 +1,50 @@
+version: 2
+jobs:
+   build:
+     machine: true
+     environment:
+       - AWS_ACCOUNT: "307921801440"
+       - ECR_ENDPOINT: "307921801440.dkr.ecr.eu-west-1.amazonaws.com"
+       - ECR_REPO_NS: "cms"
+       - TOMCAT_VER: "8.5.23"
+     steps:
+       - checkout
+       - run: |
+            ## Build container
+            
+            # Build Docker container
+            docker build -t ${ECR_REPO_NS}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BUILD_NUM} \
+              ./docker-build
+
+       - run: |
+            ## Run tests
+            # Install InSpec
+            gem install inspec
+
+            # Get image ID and run container
+            container_image=$(sudo docker images -q ${ECR_REPO_NS}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BUILD_NUM})
+            sudo docker run -dti --name test_${CIRCLE_BUILD_NUM} $container_image /bin/sh
+
+            # Run InSpec tests
+            inspec exec ~/project/tests/base_container.rb \
+              -t docker://test_${CIRCLE_BUILD_NUM}
+
+       - run: |
+            ## Push container image to ECR
+            # Update pip & awscli
+            pip install --upgrade pip
+            pip install --upgrade awscli
+
+            # Login into ECR
+            $(aws --region eu-west-1 ecr get-login --no-include-email)
+
+            # Tagging container
+            docker tag ${ECR_REPO_NS}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BUILD_NUM} \
+              ${ECR_ENDPOINT}/${ECR_REPO_NS}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BUILD_NUM}
+            docker tag ${ECR_ENDPOINT}/${ECR_REPO_NS}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BUILD_NUM} \
+              ${ECR_ENDPOINT}/${ECR_REPO_NS}/${CIRCLE_PROJECT_REPONAME}:latest
+            
+            # Pushing container to ECR
+            docker push \
+              ${ECR_ENDPOINT}/${ECR_REPO_NS}/${CIRCLE_PROJECT_REPONAME}
+
