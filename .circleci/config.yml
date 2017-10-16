@@ -11,6 +11,12 @@ jobs:
        - checkout
        - run: |
             ## Build container
+            # Update pip & awscli
+            pip install --upgrade pip
+            pip install --upgrade awscli
+
+            # Login into ECR
+            $(aws --region eu-west-1 ecr get-login --no-include-email)
             
             # Build Docker container
             docker build -t ${ECR_REPO_NS}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BUILD_NUM} \
@@ -31,12 +37,6 @@ jobs:
 
        - run: |
             ## Push container image to ECR
-            # Update pip & awscli
-            pip install --upgrade pip
-            pip install --upgrade awscli
-
-            # Login into ECR
-            $(aws --region eu-west-1 ecr get-login --no-include-email)
 
             # Tagging container
             docker tag ${ECR_REPO_NS}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BUILD_NUM} \
