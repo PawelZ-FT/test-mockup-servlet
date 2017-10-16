@@ -6,7 +6,8 @@ jobs:
        - AWS_ACCOUNT: "307921801440"
        - ECR_ENDPOINT: "307921801440.dkr.ecr.eu-west-1.amazonaws.com"
        - ECR_REPO_NS: "cms"
-       - TOMCAT_VER: "8.5.23"
+       - S3_BUCKET: "cms-tech-s3"
+       - METHODE_SERVLET: "ft-methode-restapi-app"
      steps:
        - checkout
        - run: |
@@ -14,6 +15,10 @@ jobs:
             # Update pip & awscli
             pip install --upgrade pip
             pip install --upgrade awscli
+
+            # Get servlet files from S3
+            aws s3 cp s3://${S3_BUCKET}/${METHODE_SERVLET}/servlet.tgz \
+              ./docker-build/files/servlet.tgz
 
             # Login into ECR
             $(aws --region eu-west-1 ecr get-login --no-include-email)
