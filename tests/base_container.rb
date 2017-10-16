@@ -17,7 +17,7 @@ control "servlet_container" do
       it { should be_file }
       it { should be_owned_by 'tomcat' }
       # its('mode') { should cmp '0644' }
-      it { should be_readable.by_user('tomcat') }
+      # it { should be_readable.by_user('tomcat') }
       it { should_not be_writable.by('others') }
     end
   end
